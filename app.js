@@ -164,12 +164,12 @@ function convertCurrency(from, to, amount) {
         return data.conversion_result;
       } else {
         console.error("Conversion error:", data);
-        return "error1";
+        return "error";
       }
     })
     .catch((error) => {
       console.error("API error:", error);
-      return "error2";
+      return "error";
     });
 }
 
