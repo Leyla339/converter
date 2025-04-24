@@ -50,75 +50,65 @@ function oneDot(value) {
 // left button click
 buttonsLeft.forEach((item) => {
   item.addEventListener("click", () => {
-    lastChanged = "left";
     buttonsLeft.forEach((btn) => btn.classList.remove("active-button"));
     item.classList.add("active-button");
-    sameCurrency();
+    const fromCurrency = document.querySelector(".buttons-left .active-button").textContent;
+    const toCurrency = document.querySelector(".buttons-right .active-button").textContent;
+    update(fromCurrency, toCurrency);
   });
 });
 
 // right button click
 buttonsRight.forEach((item) => {
   item.addEventListener("click", () => {
-    lastChanged = "right";
     buttonsRight.forEach((btn) => btn.classList.remove("active-button"));
     item.classList.add("active-button");
-    sameCurrency();
+    const fromCurrency = document.querySelector(".buttons-left .active-button").textContent;
+    const toCurrency = document.querySelector(".buttons-right .active-button").textContent;
+    update(fromCurrency, toCurrency);
   });
 });
 
-function sameCurrency() {
-  const fromCurrency = document.querySelector(
-    ".buttons-left .active-button"
-  ).textContent;
-  const toCurrency = document.querySelector(
-    ".buttons-right .active-button"
-  ).textContent;
 
+function update(fromCurrency, toCurrency) {
   if (fromCurrency === toCurrency) {
     changeLeft.textContent = `1 ${fromCurrency} = 1 ${toCurrency}`;
     changeRight.textContent = `1 ${toCurrency} = 1 ${fromCurrency}`;
     if (lastChanged === "left") {
-      inputLeft.value = inputRight.value;
+      inputRight.value = inputLeft.value; 
     } else {
-      inputRight.value = inputLeft.value;
+      inputLeft.value = inputRight.value; 
     }
   } else {
-    fetch(
-      `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${fromCurrency}`
-    )
-      .then((response) => response.json())
-      .then((data) => {
+    fetch(`https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${fromCurrency}`)
+      .then(response => response.json())
+      .then(data => {
         const exchangeRateLeft = data.conversion_rates[toCurrency];
         if (exchangeRateLeft) {
-          changeLeft.textContent = `1 ${fromCurrency} = ${exchangeRateLeft.toFixed(
-            5
-          )} ${toCurrency}`;
+          changeLeft.textContent = `1 ${fromCurrency} = ${exchangeRateLeft.toFixed(5)} ${toCurrency}`;
+          if (lastChanged === "left") {
+            inputRight.value = cleanInput((parseFloat(inputLeft.value) * exchangeRateLeft).toFixed(5)); 
+          }
         } else {
-          changeLeft.textContent = "Not founf";
+          changeLeft.textContent = "Error fetching rate";
         }
       })
-      .catch((error) => {
-        console.error("Error:", error);
-        changeLeft.textContent = "Error";
-      });
+      .catch(() => changeLeft.textContent = "Error fetching rate");
 
     fetch(`https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${toCurrency}`)
-      .then((response) => response.json())
-      .then((data) => {
+      .then(response => response.json())
+      .then(data => {
         const exchangeRateRight = data.conversion_rates[fromCurrency];
         if (exchangeRateRight) {
-          changeRight.textContent = `1 ${toCurrency} = ${exchangeRateRight.toFixed(
-            5
-          )} ${fromCurrency}`;
+          changeRight.textContent = `1 ${toCurrency} = ${exchangeRateRight.toFixed(5)} ${fromCurrency}`;
+          if (lastChanged === "right") {
+            inputLeft.value = cleanInput((parseFloat(inputRight.value) * exchangeRateRight).toFixed(5)); 
+          }
         } else {
-          changeRight.textContent = "Not found";
+          changeRight.textContent = "Error fetching rate";
         }
       })
-      .catch((error) => {
-        console.error("Error:", error);
-        changeRight.textContent = "Erro";
-      });
+      .catch(() => changeRight.textContent = "Error fetching rate");
   }
 }
 
@@ -135,7 +125,7 @@ inputLeft.addEventListener("input", () => {
 
   if (fromCurrency === toCurrency) {
     inputRight.value = inputLeft.value;
-    sameCurrency();
+    update(fromCurrency, toCurrency);
   } else {
     convertCurrency(fromCurrency, toCurrency, inputLeft.value).then((data) => {
       inputRight.value = cleanInput(String(data));
@@ -156,7 +146,7 @@ inputRight.addEventListener("input", () => {
 
   if (fromCurrency === toCurrency) {
     inputLeft.value = inputRight.value;
-    sameCurrency();
+    update(fromCurrency, toCurrency);
   } else {
     convertCurrency(fromCurrency, toCurrency, inputRight.value).then((data) => {
       inputLeft.value = cleanInput(String(data));
@@ -205,4 +195,3 @@ window.addEventListener("online", function () {
   }, 3000);
   sameCurrency();
 });
-
