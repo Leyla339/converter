@@ -139,12 +139,14 @@ li:first-child {
   text-align: center;
   color: red;
   font: 500 30px Roboto;
+  margin-top: 40px;
 }
 .internet{
   display: none;
   text-align: center;
   color: green;
   font: 500 30px Roboto;
+  margin-top: 40px;
 }
 @media (max-width: 1170px) {
   .header {
