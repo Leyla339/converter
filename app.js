@@ -87,7 +87,8 @@ function update(fromCurrency, toCurrency) {
     } else {
       inputLeft.value = inputRight.value;
     }
-  } else {
+  }
+  else {
     fetch(
       `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${fromCurrency}`
     )
@@ -160,7 +161,8 @@ inputLeft.addEventListener("input", () => {
     inputRight.value = inputLeft.value;
     update(fromCurrency, toCurrency);
   } else {
-    convertCurrency(fromCurrency, toCurrency, inputLeft.value).then((data) => {
+    convertCurrency(fromCurrency, toCurrency, inputLeft.value)
+    .then((data) => {
       inputRight.value = cleanInput(String(data));
     });
   }
@@ -224,11 +226,7 @@ function convertCurrency(from, to, amount) {
 // internet
 const noInternetElement = document.querySelector(".no-internet");
 const internetElement = document.querySelector(".internet");
-window.addEventListener("load", function () {
-  if (!navigator.onLine) {
-    noInternetElement.style.display = "block";
-  }
-});
+
 
 window.addEventListener("offline", function () {
   noInternetElement.style.display = "block";
@@ -244,7 +242,8 @@ window.addEventListener("online", function () {
 
   if (pendingConversion) {
     const { side, value, from, to } = pendingConversion;
-    convertCurrency(from, to, value).then((data) => {
+    convertCurrency(from, to, value)
+    .then((data) => {
       if (side === "left") {
         inputRight.value = cleanInput(String(data));
       } else {
