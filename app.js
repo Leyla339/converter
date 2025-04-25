@@ -7,7 +7,8 @@ let changeRight = document.querySelector(".change-right");
 let inputLeft = document.querySelector(".input-left");
 let inputRight = document.querySelector(".input-right");
 let lastChanged;
-const API_KEY = "5616f9249559a2ed16f34f11";
+const API_KEY = "e7fe5db8e025f1e03f3964db";
+let pendingConversion = null;
 
 // burger-menu
 burgerMenu.addEventListener("click", () => {
@@ -52,8 +53,12 @@ buttonsLeft.forEach((item) => {
   item.addEventListener("click", () => {
     buttonsLeft.forEach((btn) => btn.classList.remove("active-button"));
     item.classList.add("active-button");
-    const fromCurrency = document.querySelector(".buttons-left .active-button").textContent;
-    const toCurrency = document.querySelector(".buttons-right .active-button").textContent;
+    const fromCurrency = document.querySelector(
+      ".buttons-left .active-button"
+    ).textContent;
+    const toCurrency = document.querySelector(
+      ".buttons-right .active-button"
+    ).textContent;
     update(fromCurrency, toCurrency);
   });
 });
@@ -63,52 +68,65 @@ buttonsRight.forEach((item) => {
   item.addEventListener("click", () => {
     buttonsRight.forEach((btn) => btn.classList.remove("active-button"));
     item.classList.add("active-button");
-    const fromCurrency = document.querySelector(".buttons-left .active-button").textContent;
-    const toCurrency = document.querySelector(".buttons-right .active-button").textContent;
+    const fromCurrency = document.querySelector(
+      ".buttons-left .active-button"
+    ).textContent;
+    const toCurrency = document.querySelector(
+      ".buttons-right .active-button"
+    ).textContent;
     update(fromCurrency, toCurrency);
   });
 });
-
 
 function update(fromCurrency, toCurrency) {
   if (fromCurrency === toCurrency) {
     changeLeft.textContent = `1 ${fromCurrency} = 1 ${toCurrency}`;
     changeRight.textContent = `1 ${toCurrency} = 1 ${fromCurrency}`;
     if (lastChanged === "left") {
-      inputRight.value = inputLeft.value; 
+      inputRight.value = inputLeft.value;
     } else {
-      inputLeft.value = inputRight.value; 
+      inputLeft.value = inputRight.value;
     }
   } else {
-    fetch(`https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${fromCurrency}`)
-      .then(response => response.json())
-      .then(data => {
+    fetch(
+      `https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${fromCurrency}`
+    )
+      .then((response) => response.json())
+      .then((data) => {
         const exchangeRateLeft = data.conversion_rates[toCurrency];
         if (exchangeRateLeft) {
-          changeLeft.textContent = `1 ${fromCurrency} = ${exchangeRateLeft.toFixed(5)} ${toCurrency}`;
+          changeLeft.textContent = `1 ${fromCurrency} = ${exchangeRateLeft.toFixed(
+            5
+          )} ${toCurrency}`;
           if (lastChanged === "left") {
-            inputRight.value = cleanInput((parseFloat(inputLeft.value) * exchangeRateLeft).toFixed(5)); 
+            inputRight.value = cleanInput(
+              (parseFloat(inputLeft.value) * exchangeRateLeft).toFixed(5)
+            );
           }
         } else {
           changeLeft.textContent = "Error fetching rate";
         }
       })
-      .catch(() => changeLeft.textContent = "Error fetching rate");
+      .catch(() => (changeLeft.textContent = "Error fetching rate"));
 
     fetch(`https://v6.exchangerate-api.com/v6/${API_KEY}/latest/${toCurrency}`)
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         const exchangeRateRight = data.conversion_rates[fromCurrency];
         if (exchangeRateRight) {
-          changeRight.textContent = `1 ${toCurrency} = ${exchangeRateRight.toFixed(5)} ${fromCurrency}`;
+          changeRight.textContent = `1 ${toCurrency} = ${exchangeRateRight.toFixed(
+            5
+          )} ${fromCurrency}`;
           if (lastChanged === "right") {
-            inputLeft.value = cleanInput((parseFloat(inputRight.value) * exchangeRateRight).toFixed(5)); 
+            inputLeft.value = cleanInput(
+              (parseFloat(inputRight.value) * exchangeRateRight).toFixed(5)
+            );
           }
         } else {
           changeRight.textContent = "Error fetching rate";
         }
       })
-      .catch(() => changeRight.textContent = "Error fetching rate");
+      .catch(() => (changeRight.textContent = "Error fetching rate"));
   }
 }
 
@@ -122,6 +140,21 @@ inputLeft.addEventListener("input", () => {
   const toCurrency = document.querySelector(
     ".buttons-right .active-button"
   ).textContent;
+
+  if (!navigator.onLine) {
+    if (fromCurrency === toCurrency) {
+      inputRight.value = inputLeft.value;
+    } else {
+      inputRight.value = "";
+      pendingConversion = {
+        side: "left",
+        value: inputLeft.value,
+        from: fromCurrency,
+        to: toCurrency,
+      };
+      return;
+    }
+  }
 
   if (fromCurrency === toCurrency) {
     inputRight.value = inputLeft.value;
@@ -143,6 +176,21 @@ inputRight.addEventListener("input", () => {
   const toCurrency = document.querySelector(
     ".buttons-left .active-button"
   ).textContent;
+
+  if (!navigator.onLine) {
+    if (fromCurrency === toCurrency) {
+      inputLeft.value = inputRight.value;
+    } else {
+      inputLeft.value = "";
+      pendingConversion = {
+        side: "right",
+        value: inputRight.value,
+        from: fromCurrency,
+        to: toCurrency,
+      };
+      return;
+    }
+  }
 
   if (fromCurrency === toCurrency) {
     inputLeft.value = inputRight.value;
@@ -193,5 +241,16 @@ window.addEventListener("online", function () {
   setTimeout(function () {
     internetElement.style.display = "none";
   }, 3000);
-  sameCurrency();
+
+  if (pendingConversion) {
+    const { side, value, from, to } = pendingConversion;
+    convertCurrency(from, to, value).then((data) => {
+      if (side === "left") {
+        inputRight.value = cleanInput(String(data));
+      } else {
+        inputLeft.value = cleanInput(String(data));
+      }
+      pendingConversion = null;
+    });
+  }
 });
